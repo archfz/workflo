@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+
+description="$1"
+if [ "$description" == "" ]; then
+	printf "Commit description missing!"
+	exit 1
+fi
+
+branch=$( git branch )
+taskId=$( echo "$branch" | grep \* | cut -d ' ' -f2 | sed -r 's/.*(story|.*sub_task|bug)\/([A-Za-z]+\-[0-9]+).*/\2/' )
+if [ "$description" == "" ]; then
+	printf "Could not determine the task ID from the branch name!"
+	printf "branch: $branch"
+	exit 1
+fi
+
+logtime="$2"
+if [ "$logtime" != "" ]; then
+    printf "Adding work log..";
+
+    set -o pipefail
+    results=$(wfmain "log_work" "$taskId" "$description" "$logtime" | tee /dev/tty )
+    set +o pipefail
+else
+    printf "Commit log time omitted. Skipping work log..\n"
+fi
+
+git commit -am "$taskId: $description"

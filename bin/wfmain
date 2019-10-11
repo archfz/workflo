@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+end=$'\e[0m'
+grn=$'\e[1;32m'
+red=$'\e[1;31m'
+
+FWD=$(dirname "$(realpath $0)")
+START=$(date +%s.%N)
+TASK=$1
+
+if [ "$TASK" == "" ]; then
+	printf "Task required!"
+	exit 1
+fi
+
+#RUN=$(netstat -ltnp | grep -w ':4444')
+#if [ "$RUN" == "" ]; then
+#  printf "$grn\nStarting selenium..$end\n"
+#  (cd "$FWD" && npm run init-selenium)
+#  (cd "$FWD" && npm run start-selenium &)
+#
+#  sleep 3
+#fi
+
+printf "$grn\nRunning task..$end\n"
+node "$FWD/../src/tasks/$TASK.js" "${@:2}" 1>&1 2>&1
+EXIT=$?
+
+END=$(date +%s.%N)
+DIFF=$(echo "$END - $START" | bc)
+printf "$grn\nTask took ${DIFF}s..$end\n"
+
+if [ "$EXIT" != 0 ]; then
+  printf "$red\nTASK FAILED !!$end\n"
+fi
+exit $EXIT;

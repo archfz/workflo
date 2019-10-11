@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -e
+
+branch="$2"
+if [ "$branch" == "" ]; then
+	printf "Task tracking branch required!"
+	exit 1
+fi
+
+taskId="$1"
+if [ "$taskId" == "" ]; then
+	printf "Task JIRA ID argument required!"
+	exit 1
+fi
+
+set -o pipefail
+results=$(wfmain "start_task" "$taskId" | tee /dev/tty )
+set +o pipefail
+
+type=$(echo "$results" | grep -oP "(?<=\>TASK-TYPE: )(.*)")
+if [ "$type" == "" ]; then
+	printf "Task type could not be determined!"
+	exit 1
+fi
+
+name=$(echo "$results" | grep -oP "(?<=\>TASK-TITLE: )(.*)")
+if [ "$name" == "" ]; then
+	printf "Task title could not be determined!"
+	exit 1
+fi
+
+# Let's just fetch for convenience.
+git fetch
+
+# Checkout the branch if it doesn't yet exist.
+(git checkout "$type/${taskId}_$name" \
+  && git branch -u "origin/$branch") \
+  || git checkout -b "$type/${taskId}_$name" --track "origin/$branch"

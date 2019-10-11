@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+set -o pipefail
+results=$(wfmain "clone_jira_logs" "$1"  | tee /dev/tty )
+set +o pipefail
+
