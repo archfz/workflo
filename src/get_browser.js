@@ -1,3 +1,4 @@
+require('chromedriver');
 const {Builder} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const fs = require('fs');

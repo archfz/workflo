@@ -20,17 +20,18 @@ const getBrowser = require('../get_browser');
     const logWorkButton = await driver.findElement(By.id(process.env.LOG_WORK_SCREEN_BUTTON_ID));
     await logWorkButton.click();
 
-    await driver.wait(until.elementLocated(By.name(process.env.INPUT_NAME_LOG_WORK_TIME)), 5000);
+    await driver.wait(until.elementLocated(By.css(process.env.INPUT_LOG_WORK_TIME_SELECTOR)), 5000);
 
-    const form = await driver.findElement(By.name(process.env.FORM_NAME_WORKLOG));
-    await form.findElement(By.name(process.env.INPUT_NAME_LOG_WORK_TIME)).then((element) => {
+    const form = await driver.findElement(By.css(process.env.FORM_WORKLOG_SELECTOR));
+    await form.findElement(By.css(process.env.INPUT_LOG_WORK_TIME_SELECTOR)).then(async (element) => {
+      await driver.sleep(100);
       return element.sendKeys(`${logTime}h`);
     });
-    await form.findElement(By.name(process.env.INPUT_LOG_NAME_WORK_DESCRIPTION)).then((element) => {
+    await form.findElement(By.css(process.env.INPUT_LOG_WORK_DESCRIPTION_SELECTOR)).then((element) => {
       return element.sendKeys(`${description}`);
     });
 
-    const logWorkSubmit = await form.findElement(By.id(process.env.LOG_WORK_BUTTON_ID));
+    const logWorkSubmit = await form.findElement(By.css(process.env.LOG_WORK_BUTTON_SELECTOR));
     await logWorkSubmit.click();
     await driver.sleep(500);
     await driver.findElements(By.css(process.env.LOG_WORK_ERROR_CONTAINER_SELCTOR + " *"))

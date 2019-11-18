@@ -1,6 +1,7 @@
 const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 const Confirm = require('prompt-confirm');
+const dateFormat = require('dateformat');
 
 const JOB_TASK_MAP = Object.entries(JSON.parse(process.env.JIRA_CLONE_JOB_TO_TASK_MAP));
 
@@ -14,77 +15,116 @@ function getTargetTaskFromJob(job) {
   return process.env.JIRA_CLONE_DEFAULT_JOB;
 }
 
+function getMonday() {
+  let d = new Date();
+  let day = d.getDay(),
+    diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
+  return new Date(d.setDate(diff));
+}
+
+function getFriday() {
+  let d = new Date();
+  let day = d.getDay(),
+    diff = d.getDate() - day + (day == 0 ? -3:5); // adjust when day is sunday
+  return new Date(d.setDate(diff));
+}
+
 function escapeQ(str) {
   return (str + "").replace("\\n", "\\\\n").replace(/\\/g, "\\\\").replace(/\"/g, "\\\"")
 }
 
 (async function () {
-  const beforeDateString = process.argv[2];
-  const jiraFromUrl = process.env.JIRA_BASE_URL + "/secure/TempoUserBoard!worklogs.jspa";
-  const logMap = {};
-  let beforeDate;
+  const startDateStr = process.argv[2];
+  const endDateStr = process.argv[3];
+  let startDate, endDate;
 
-  if (beforeDateString) {
-    beforeDate = new Date(beforeDateString);
-    console.log("Logging only before: " + beforeDate);
+  if (!startDateStr) {
+    startDate = getMonday();
+  } else {
+    startDate = new Date(startDateStr);
   }
 
-  await getBrowser(jiraFromUrl, async (driver, close) => {
-    await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR)), 10000);
-    await driver.sleep(1000);
+  if (!endDateStr) {
+    endDate = getFriday();
+  } else {
+    endDate = new Date(endDateStr);
+  }
 
-    try {
-      await driver.findElement(By.id(process.env.LOGS_INTERVAL_WEEK_BUTTON_SELECTOR)).then((button) => button.click());
-      await driver.findElement(By.css(process.env.LOGS_INTERVAL_WEEK_BUTTON_SELECTOR)).then((button) => button.click());
-      await driver.sleep(1000);
-    } catch (e) {
-      console.error(e);
-    }
+  const jiraFromUrl = (process.env.JIRA_BASE_URL + process.env.JIRA_CLONE_SOURCE_PATH)
+    .replace('{from}', dateFormat(startDate, 'yyyy-mm-dd'))
+    .replace('{to}', dateFormat(endDate, 'yyyy-mm-dd'));
+  const logMap = {};
+
+  await getBrowser(jiraFromUrl, async (driver, close) => {
+    await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR)), 10000);
+
+    await driver.findElement(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR))
+      .then((element) => element.click());
+    await driver.sleep(1500);
+    await driver.findElement(By.css(process.env.JIRA_CLONE_DATE_FROM_SELECTOR))
+      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(startDate, 'dd/mmm/yyyy')));
+    await driver.findElement(By.css(process.env.JIRA_CLONE_DATE_TO_SELECTOR))
+      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(endDate, 'dd/mmm/yyyy')));
+    await driver.findElement(By.xpath(process.env.JIRA_CLONE_APPLY_DATE_BUTTON_XPATH))
+      .then(element => element.click());
+
+    await driver.sleep(1500);
+    await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR)), 10000);
 
     const elements = await driver.findElements(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR));
+    console.log(`Found ${elements.length} logs.`);
+    let promise = Promise.resolve();
 
-    await Promise.all(elements.map((element) => {
-      let promises = [
-        element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_TIME_SELECTOR)).then(element => element.getText()),
-        element.findElement(By.css(process.env.JIRA_CLONE_TASK_DAY_SELECTOR)).then(element => element.getText()),
-        element.findElement(By.css(process.env.JIRA_CLONE_TASK_ID_SELECTOR)).then(element => element.getText()),
-        element.findElement(By.css(process.env.JIRA_CLONE_TASK_DESCRIPTION_SELECTOR)).then(element => element.getText()),
-        element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_JOB_SELECTOR)).then(element => element.getText()),
-      ];
+    elements.forEach((element, index) => {
+      promise = promise.then(async () => {
+        await element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_JOB_SELECTOR))
+          .catch(e => console.warn(`Skipping row ${index}`));
 
-      return Promise.all(promises)
-        .then(([time, day, id, description, job]) => {
-          if (!id) {
-            return;
-          }
+        await driver.executeScript("arguments[0].scrollIntoView(true)", element);
+        await driver.sleep(100);
 
-          if (beforeDate) {
-            const parsedDate = new Date(day);
-            console.log("Checking log for day: " + parsedDate);
-            if (parsedDate >= beforeDate) {
-              console.log("Skipping log for day: " + parsedDate);
+        let promises = [
+          element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_TIME_SELECTOR)).then(element => element.getText()),
+          element.findElement(By.css(process.env.JIRA_CLONE_TASK_DAY_SELECTOR)).then(element => element.getText()),
+          element.findElement(By.css(process.env.JIRA_CLONE_TASK_ID_SELECTOR)).then(element => element.getText()),
+          element.findElement(By.css(process.env.JIRA_CLONE_TASK_DESCRIPTION_SELECTOR)).then(element => element.getText()),
+          element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_JOB_SELECTOR)).then(element => element.getAttribute('value')),
+        ];
+
+        await Promise.all(promises)
+          .then(([time, day, id, description, job]) => {
+            if (!id) {
+              console.warn(`WARNING: Skipping log on index ${index}. ID not found. Other data: ${time} ${day} ${job} ${description}`);
               return;
             }
-          }
 
-          const target = getTargetTaskFromJob(job);
+            const dayDate = new Date(day + " 12:00:00");
+            if (dayDate < startDate || dayDate > endDate) {
+              console.warn(`WARNING: Skipping ${index}. Date '${day}' not in range.`);
+              return;
+            }
 
-          if (!logMap[day]) {
-            logMap[day] = {};
-          }
-          if (!logMap[day][target]) {
-            logMap[day][target] = { time: 0, description: "" };
-          }
+            const target = getTargetTaskFromJob(job);
 
-          const timeFloat = parseFloat(time);
-          if (isNaN(timeFloat)) {
-            throw new Error(`Failed to calculate time log from '${time}'.`);
-          }
+            if (!logMap[day]) {
+              logMap[day] = {};
+            }
+            if (!logMap[day][target]) {
+              logMap[day][target] = { time: 0, description: "" };
+            }
 
-          logMap[day][target].time += timeFloat;
-          logMap[day][target].description += id + ": " + description + "\n";
-        });
-    }));
+            const timeFloat = parseFloat(time);
+            if (isNaN(timeFloat)) {
+              throw new Error(`Failed to calculate time log from '${time}'.`);
+            }
+
+            logMap[day][target].time += timeFloat;
+            logMap[day][target].description += id + ": " + description + "\n";
+          });
+      });
+    });
+
+    await promise;
 
     console.log(JSON.stringify(logMap, null, 2));
 
@@ -124,7 +164,7 @@ function escapeQ(str) {
             return Promise.resolve()
               .then(() => driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR)))
               .then((element) => element.click())
-              .then(() => driver.sleep(1000));
+              .then(() => driver.sleep(1200));
           });
       });
     });
