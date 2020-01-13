@@ -1,11 +1,22 @@
+const conf = require('./init');
 require('chromedriver');
 const {Builder} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const fs = require('fs');
 const os = require('os');
-require('dotenv').config({ path: __dirname + '/../.env' });
+const path = require('path');
 
-const COOKIES_PATH = __dirname + "/../cookies/{name}.json";
+const COOKIES_PATH = conf.store_path + "/cookies/{name}.json";
+
+function ensureDirectoryExistence(filePath) {
+  const dirname = path.dirname(filePath);
+  if (fs.existsSync(dirname)) {
+    return true;
+  }
+  ensureDirectoryExistence(dirname);
+  fs.mkdirSync(dirname);
+}
+
 
 module.exports = async function (url, task) {
   let driver;
@@ -14,6 +25,7 @@ module.exports = async function (url, task) {
 
   const close = async () => {
     const cookies = await driver.manage().getCookies();
+    ensureDirectoryExistence(cookiePath);
     fs.writeFileSync(cookiePath, JSON.stringify(cookies));
 
     await driver.quit()

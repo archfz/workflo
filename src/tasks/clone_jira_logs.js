@@ -1,32 +1,44 @@
+const conf = require('../init');
+const config = require('../config');
 const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 const Confirm = require('prompt-confirm');
 const dateFormat = require('dateformat');
+const axios = require('axios');
 
-const JOB_TASK_MAP = Object.entries(JSON.parse(process.env.JIRA_CLONE_JOB_TO_TASK_MAP));
+const TASK_MAP = Object.entries(JSON.parse(config.jira_clone_task_to_task_map));
+const JOB_TASK_MAP = Object.entries(JSON.parse(config.jira_clone_job_to_task_map));
 
-function getTargetTaskFromJob(job) {
+function getTargetTask(job, id) {
+  for (let [regex, task] of TASK_MAP) {
+    if (id.match(new RegExp(regex))) {
+      return task;
+    }
+  }
+
   for (let [regex, task] of JOB_TASK_MAP) {
     if (job.match(new RegExp(regex))) {
       return task;
     }
   }
 
-  return process.env.JIRA_CLONE_DEFAULT_JOB;
+  return config.jira_clone_target_default_job;
 }
 
 function getMonday() {
   let d = new Date();
   let day = d.getDay(),
     diff = d.getDate() - day + (day == 0 ? -6:1); // adjust when day is sunday
-  return new Date(d.setDate(diff));
+  let date = new Date(d.setDate(diff));
+  date.setHours(0);
+  return date;
 }
 
 function getFriday() {
   let d = new Date();
   let day = d.getDay(),
     diff = d.getDate() - day + (day == 0 ? -3:5); // adjust when day is sunday
-  return new Date(d.setDate(diff));
+  return  new Date(d.setDate(diff));
 }
 
 function escapeQ(str) {
@@ -49,6 +61,7 @@ function escapeQ(str) {
   } else {
     endDate = new Date(endDateStr);
   }
+  endDate.setHours(23);
 
   const jiraFromUrl = (process.env.JIRA_BASE_URL + process.env.JIRA_CLONE_SOURCE_PATH)
     .replace('{from}', dateFormat(startDate, 'yyyy-mm-dd'))
@@ -98,13 +111,14 @@ function escapeQ(str) {
               return;
             }
 
-            const dayDate = new Date(day + " 12:00:00");
+            const dayDate = new Date(day);
+            dayDate.setHours(6);
             if (dayDate < startDate || dayDate > endDate) {
               console.warn(`WARNING: Skipping ${index}. Date '${day}' not in range.`);
               return;
             }
 
-            const target = getTargetTaskFromJob(job);
+            const target = getTargetTask(job, id);
 
             if (!logMap[day]) {
               logMap[day] = {};
@@ -161,16 +175,40 @@ function escapeQ(str) {
             const taskElement = await driver.findElement(By.css(process.env.JIRA_CLONE_ISSUE_INPUT_SELECTOR));
             await taskElement.sendKeys(taskId + "\n");
 
-            return Promise.resolve()
-              .then(() => driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR)))
+            return driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR))
               .then((element) => element.click())
               .then(() => driver.sleep(1200));
+            return Promise.resolve();
           });
       });
     });
 
     await promise;
+    await driver.wait(1000 * 60);
   });
+
+  if (endDate.getDay() === 5) {
+    const jiraSubmitUrl = process.env.JIRA_CLONE_SUBMIT_WEEK_URL
+      .replace('{period}', dateFormat(endDate, 'ddmmyyyy'))
+      .replace('{username}', config.jira_clone_target_username);
+    await getBrowser(jiraSubmitUrl, async (driver, close) => {
+      await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_APPROVAL_REVIEWER_SELECTOR)), 10000);
+      await driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_APPROVAL_REVIEWER_SELECTOR}").value=arguments[0]`, config.jira_clone_approver_id);
+
+      const joke = await axios.post("https://icanhazdadjoke.com/graphql", "{\"query\": \"query { joke {joke } }\"}", {
+        headers: {"Content-Type": "application/json"}
+      }).then((response) => response.data.data.joke.joke)
+        .catch((error) => {
+          console.error(error);
+          return "Failed to fetch joke this time! :("
+        });
+
+      await driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_APPROVAL_COMMENT_SELECTOR}").value=arguments[0]`, joke);
+      await driver.wait(199999);
+      await driver.findElement(By.css(process.env.JIRA_CLONE_APPROVAL_SUBMIT_BTN_SELECTOR))
+        .then((element) => element.click());
+    });
+  }
 })().catch(e => {
   !e.isLogged && console.error(e);
 

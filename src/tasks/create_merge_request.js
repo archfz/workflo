@@ -1,7 +1,9 @@
+const conf = require('../init');
+const config = require('../config');
 const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 const browserUtils = require('../browser_utils');
-const axios = require('axios')
+const axios = require('axios');
 
 async function setTaskStatusInCodeReview(driver) {
   return driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID))
@@ -54,7 +56,7 @@ async function setTaskStatusInCodeReview(driver) {
     console.error("Failed setting task status.", error);
   });
 
-  const gitlabUrl = process.env.GITLAB_NEW_MR_URL
+  const gitlabUrl = config.gitlab_url + process.env.GITLAB_NEW_MR_URL
     .replace('{project}', project)
     .replace('{source}', encodeURIComponent(currentBranch))
     .replace('{target}', encodeURIComponent(targetBranch));
@@ -73,7 +75,7 @@ async function setTaskStatusInCodeReview(driver) {
 
     if (text.match(new RegExp(process.env.GITLAB_MR_EXISTS_REGEX))) {
       const mrId = text.match(new RegExp(process.env.GITLAB_MR_EXISTS_REGEX))[1];
-      const mrUrl = process.env.GITLAB_MR_URL
+      const mrUrl = config.gitlab_url + process.env.GITLAB_MR_URL
         .replace('{project}', project)
         .replace('{id}', mrId);
       await browserUtils.navigateToUrl(driver, mrUrl);
@@ -99,7 +101,7 @@ async function setTaskStatusInCodeReview(driver) {
       });
   });
 
-  await getBrowser(process.env.SLACK_CHANNEL_URL, async (driver) => {
+  await getBrowser(config.slack_channel, async (driver) => {
     await driver.wait(until.elementLocated(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR)), 10000);
     const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
 

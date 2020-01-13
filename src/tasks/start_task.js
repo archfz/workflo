@@ -1,3 +1,4 @@
+const conf = require('../init');
 const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 const browserUtils = require('../browser_utils');

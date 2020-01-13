@@ -1,3 +1,4 @@
+const conf = require('../init');
 const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 
@@ -43,6 +44,7 @@ const getBrowser = require('../get_browser');
             });
         }
       });
+    await driver.sleep(2500);
   });
 })().catch(e => {
   !e.isLogged && console.error(e);
