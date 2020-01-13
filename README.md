@@ -6,22 +6,10 @@ work with Slack, Gitlab and the Jira of Pitech+Plus and Summit.
 > NOTE: This tool is highly unstable and potential bugs always come up since it
 depends on 3rd party UI.
 
-- [Installation](#installation)
 - [Requirements](#requirements)
+- [Installation](#installation)
 - [Commands](#Commands)
 - [Upcomming features](#upcomming-features)
-
-## Installation
-
-1. Clone this project.
-2. Install npm packages:
-   ```bash
-   npm install -g fzuzzy-workflo
-   ```
-3. Run the configuration helper. Provide the values carefully.
-   ```bash
-   wfconfigure 
-   ```
 
 ## Requirements
 
@@ -40,6 +28,17 @@ formats: .\*(story|\[-_\]{1}task|bug)\/(\[A-Za-z]+\-\[0-9]+).\*.
 Ex: *story/INCHD-1111_some_description_of_branch*. Only this way can the tool map your
 branch and commits to a JIRA task. The `wfs` command creates branch name respecting
 this format.
+
+## Installation
+
+1. Install npm packages:
+   ```bash
+   npm install -g fzuzzy-workflo
+   ```
+1. Run the configuration helper. Provide the values carefully.
+   ```bash
+   wfconfigure 
+   ```
 
 ## Commands
 
