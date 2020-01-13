@@ -1,6 +1,14 @@
 const conf = require('../init');
 const inquirer = require('inquirer');
 const fs = require('fs');
+const path = require('path');
+let config = {};
+
+const CONFIG_PATH = path.join(conf.store_path, 'config.json');
+
+if (fs.existsSync(CONFIG_PATH)) {
+  config = require(CONFIG_PATH);
+}
 
 async function configure() {
   let allAnswers = {};
@@ -12,13 +20,13 @@ async function configure() {
         type: "input",
         name: "gitlab_url",
         message: "Gitlab URL",
-        default: "https://gitlab.pitechplus.com",
+        default: config.gitlab_url || "https://gitlab.pitechplus.com",
       },
       {
         type: "input",
         name: "slack_channel",
         message: "Slack channel. This is where the merge request link will be posted.",
-        default: "https://app.slack.com/client/T0YCCJBNU/CMP9ANG9E",
+        default: config.slack_channel || "https://app.slack.com/client/T0YCCJBNU/CMP9ANG9E",
       },
     ])
     .then(answers => allAnswers = {...allAnswers, ...answers});
@@ -32,19 +40,19 @@ async function configure() {
         type: "input",
         name: "jira_clone_target_username",
         message: "Jira target username",
-        default: "firstname.lastname",
+        default: config.jira_clone_target_username || "firstname.lastname",
       },
       {
         type: "input",
         name: "jira_clone_approver_id",
         message: "Jira billing approver id. This is the approver user for your weekly billing. Go to jira > inspect the approver select > copy the select option value.",
-        default: "rnegrean",
+        default: config.jira_clone_approver_id || "rnegrean",
       },
       {
         type: "input",
         name: "jira_clone_target_default_job",
         message: "Jira default task ID. The default target jira task ID on which to clone logs.",
-        default: "SAUP-4",
+        default: config.jira_clone_target_default_job || "SAUP-4",
       },
       {
         type: "input",
@@ -54,7 +62,7 @@ async function configure() {
           try {JSON.parse(input);} catch (e) {return "Incorrect JSON.";}
           return true;
         },
-        default: "{}",
+        default: config.jira_clone_task_to_task_map || "{}",
       },
       {
         type: "input",
@@ -64,14 +72,14 @@ async function configure() {
           try {JSON.parse(input);} catch (e) {return "Incorrect JSON.";}
           return true;
         },
-        default: "{\".*700263.*\":\"DC-8\"}",
+        default: config.jira_clone_job_to_task_map || "{\".*700263.*\":\"DC-8\"}",
       },
     ])
     .then(answers => allAnswers = {...allAnswers, ...answers});
 
   console.log("");
   console.log("All answers:", allAnswers);
-  fs.writeFileSync(conf.store_path + "/config.json", JSON.stringify(allAnswers, null, 2));
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(allAnswers, null, 2));
 }
 
 configure();
