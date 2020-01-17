@@ -203,7 +203,6 @@ function escapeQ(str) {
         });
 
       await driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_APPROVAL_COMMENT_SELECTOR}").value=arguments[0]`, joke);
-      await driver.wait(199999);
       await driver.findElement(By.css(process.env.JIRA_CLONE_APPROVAL_SUBMIT_BTN_SELECTOR))
         .then((element) => element.click());
     });
