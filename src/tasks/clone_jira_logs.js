@@ -10,14 +10,14 @@ const TASK_MAP = Object.entries(JSON.parse(config.jira_clone_task_to_task_map));
 const JOB_TASK_MAP = Object.entries(JSON.parse(config.jira_clone_job_to_task_map));
 
 function getTargetTask(job, id) {
-  for (let [regex, task] of TASK_MAP) {
-    if (id.match(new RegExp(regex))) {
+  for (let [regex, task] of JOB_TASK_MAP) {
+    if (job.match(new RegExp(regex))) {
       return task;
     }
   }
 
-  for (let [regex, task] of JOB_TASK_MAP) {
-    if (job.match(new RegExp(regex))) {
+  for (let [regex, task] of TASK_MAP) {
+    if (id.match(new RegExp(regex))) {
       return task;
     }
   }
