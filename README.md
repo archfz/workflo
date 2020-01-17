@@ -84,6 +84,8 @@ wfclonelog [fromDate?] [toDate?]
 logs to one jira.
 - Gathers data from source, outputs the logs that will be created and awaits confirmation
 whether to proceed to create those logs in the target jira.
+- Reads from the configuration you provided the default target task and mappings based on
+task ID and task job ID (task job ID has higher priority).
 - From date and to date default to end and start of current week. Date format YYYY-mm-dd.
 - If to date equals friday then the approval for the billing week is submitted. Also
 adds as comment a random joke so that the reviewer has a better time :).
