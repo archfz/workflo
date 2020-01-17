@@ -178,13 +178,12 @@ function escapeQ(str) {
             return driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR))
               .then((element) => element.click())
               .then(() => driver.sleep(1200));
-            return Promise.resolve();
           });
       });
     });
 
     await promise;
-    await driver.wait(1000 * 60);
+    await driver.sleep(500);
   });
 
   if (endDate.getDay() === 5) {
