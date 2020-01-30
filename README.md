@@ -10,6 +10,7 @@ depends on 3rd party UI.
 - [Installation](#installation)
 - [Commands](#Commands)
 - [Upcomming features](#upcomming-features)
+- [Release Notes](#release-notes)
 
 ## Requirements
 
@@ -95,5 +96,14 @@ well.
 
 ## Upcomming features
 
-- Support multiple repository managers: +Bitbucket.
-- Support different messaging apps: +Skype.
+- Detection for login screens and await until the user logs in before attempting to
+execute the required action set. 
+- Maybe support for different messaging apps: +Skype.
+
+## Release notes
+
+#### 1.2.0
+
+- Added option to configure which mapping should be with higher priority when cloning 
+logs.
+- Added support for creating merge requests with bitbucket.  

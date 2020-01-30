@@ -5,6 +5,11 @@ const getBrowser = require('../get_browser');
 const browserUtils = require('../browser_utils');
 const axios = require('axios');
 
+const MERGE_REQUEST_CREATION_HANDLERS = {
+  "gitlab": require('./merge_quest_handlers/gitlab'),
+  "bitbucket": require('./merge_quest_handlers/bitbucket'),
+};
+
 async function setTaskStatusInCodeReview(driver) {
   return driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID))
     .then(async element => {
@@ -32,9 +37,13 @@ async function setTaskStatusInCodeReview(driver) {
 (async function () {
   const taskId = process.argv[2];
   const project = process.argv[3];
-  const currentBranch = process.argv[4];
-  const targetBranch = process.argv[5];
+  const repoType = process.argv[4];
+  const currentBranch = process.argv[5];
+  const targetBranch = process.argv[6];
 
+  if (!MERGE_REQUEST_CREATION_HANDLERS[repoType]) {
+    throw new Error(`Repo type '${repoType}' is not supported for merge request creation.`);
+  }
 
   let mergeRequestTitle, mergeRequestUrl, additions, removes, likes, taskTitle;
 
@@ -56,59 +65,37 @@ async function setTaskStatusInCodeReview(driver) {
     console.error("Failed setting task status.", error);
   });
 
-  const gitlabUrl = config.gitlab_url + process.env.GITLAB_NEW_MR_URL
-    .replace('{project}', project)
-    .replace('{source}', encodeURIComponent(currentBranch))
-    .replace('{target}', encodeURIComponent(targetBranch));
-  await getBrowser(gitlabUrl, async (driver) => {
-    await driver.wait(until.elementLocated(By.id(process.env.GITLAB_MR_FORM_ID)), 10000);
-    const submit = await driver.findElement(By.css(`#${process.env.GITLAB_MR_FORM_ID} [type='submit']`));
-
-    // Intended.
-    await driver.sleep(1000);
-    await submit.click();
-
-    await browserUtils.awaitUrlChange(driver);
-
-    const body = await driver.findElement(By.css('body'));
-    const text = await body.getText();
-
-    if (text.match(new RegExp(process.env.GITLAB_MR_EXISTS_REGEX))) {
-      const mrId = text.match(new RegExp(process.env.GITLAB_MR_EXISTS_REGEX))[1];
-      const mrUrl = config.gitlab_url + process.env.GITLAB_MR_URL
-        .replace('{project}', project)
-        .replace('{id}', mrId);
-      await browserUtils.navigateToUrl(driver, mrUrl);
-    }
-
-    const title = await driver.findElement(By.css(process.env.GITLAB_MR_TITLE_SELECTOR));
-    mergeRequestTitle = await title.getAttribute("innerHTML");
-    mergeRequestUrl = await driver.getCurrentUrl();
-
-    const likeButton = await driver.findElement(By.css(process.env.GITLAB_MR_LIKES_SELECTOR));
-    likes = await likeButton.getText();
-    const changesButton = await driver.findElement(By.css(process.env.GITLAB_CHANGE_LINK_SELECTOR));
-    await changesButton.click();
-    await driver.wait(until.elementLocated(By.css(process.env.GITLAB_CHANGES_ADDITIONS_SELECTOR)), 10000);
-    const additionsContainer = await driver.findElement(By.css(process.env.GITLAB_CHANGES_ADDITIONS_SELECTOR));
-    additions = await additionsContainer.getText();
-    const removesContainer = await driver.findElement(By.css(process.env.GITLAB_CHANGES_REMOVES_SELECTOR));
-    removes = await removesContainer.getText();
-
-    await axios.get('http://tinyurl.com/api-create.php?url=' + encodeURIComponent(mergeRequestUrl))
-      .then((resp) => {
-        mergeRequestUrl = resp.data;
-      });
-  });
+  const data = await MERGE_REQUEST_CREATION_HANDLERS[repoType](project, currentBranch, targetBranch);
+  const shortUrlPost = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(data.mrRequestUrl);
+  console.log(`Acquiring short url from: ${shortUrlPost}`);
+  await axios.get(shortUrlPost)
+    .then((resp) => {
+      likes = data.likes;
+      additions = data.additions;
+      removes = data.removes;
+      mergeRequestTitle = data.mrTitle;
+      mergeRequestUrl = resp.data;
+    });
 
   await getBrowser(config.slack_channel, async (driver) => {
     await driver.wait(until.elementLocated(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR)), 10000);
-    const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
-
     const titleTrimmed = taskTitle.length > 42 ? taskTitle.slice(0, 42) + ".." : taskTitle;
 
     const message = `>:robot_face:  needs \`${2 - likes}\`:thumbsup_all:  :page_facing_up:\`-${removes}\` \`+${additions}\`  *${taskId}: ${titleTrimmed}* ${mergeRequestUrl}`.replace(/\n/g, '') + '\n';
-    await input.sendKeys(message);
+    console.log(`Writing to slack: ${message}`);
+
+    const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
+    await input.clear();
+
+    const messageParts = message.split(/([*`>:])/);
+
+    for (let i = 0; i < messageParts.length; i++) {
+      const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
+      await input.sendKeys(messageParts[i]);
+      await driver.sleep(20);
+    }
+
+    await driver.sleep(2000);
   });
 
 })().catch(e => {

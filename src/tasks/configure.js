@@ -24,6 +24,12 @@ async function configure() {
       },
       {
         type: "input",
+        name: "bitbucket_url",
+        message: "Bitbucket URL",
+        default: config.bitbucket_url || "https://bitbucket.org",
+      },
+      {
+        type: "input",
         name: "slack_channel",
         message: "Slack channel. This is where the merge request link will be posted.",
         default: config.slack_channel || "https://app.slack.com/client/T0YCCJBNU/CMP9ANG9E",
@@ -57,7 +63,7 @@ async function configure() {
       {
         type: "input",
         name: "jira_clone_task_to_task_map",
-        message: "Jira task to task mapping. Map between source and target task IDs. Needs to be a valid JSON. The keys in the object are regex. Ex: {\"INCH-4\":\"SAUP-7\"}",
+        message: "Jira task to task mapping. Map between source and target task IDs. Needs to be a valid JSON. The keys in the object can be a regex or simple value. Ex: {\"INCHD-4\":\"SAUP-7\"}",
         validate: (input) => {
           try {JSON.parse(input);} catch (e) {return "Incorrect JSON.";}
           return true;
@@ -67,12 +73,19 @@ async function configure() {
       {
         type: "input",
         name: "jira_clone_job_to_task_map",
-        message: "Jira task to task mapping. Map between source job and target task ID. Needs to be a valid JSON. The keys in the object are regex. Ex: {\".*700263.*\":\"DC-8\"}",
+        message: "Jira task to task mapping. Map between source job and target task ID. Needs to be a valid JSON. The keys in the object can be a regex or simple value. Ex: {\".*700263.*\":\"DC-8\"}",
         validate: (input) => {
           try {JSON.parse(input);} catch (e) {return "Incorrect JSON.";}
           return true;
         },
         default: config.jira_clone_job_to_task_map || "{\".*700263.*\":\"DC-8\"}",
+      },
+      {
+        type: "list",
+        choices: ['job_to_task', 'task_to_task'],
+        name: "jira_clone_mapping_priority",
+        message: "Jira clone mapping priority. This priority will affect which mapping will be used in order to find a match for target task. ('job_to_task', 'task_to_task')",
+        default: config.jira_clone_mapping_priority || "job_to_task",
       },
     ])
     .then(answers => allAnswers = {...allAnswers, ...answers});

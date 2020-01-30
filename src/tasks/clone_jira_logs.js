@@ -9,20 +9,28 @@ const axios = require('axios');
 const TASK_MAP = Object.entries(JSON.parse(config.jira_clone_task_to_task_map));
 const JOB_TASK_MAP = Object.entries(JSON.parse(config.jira_clone_job_to_task_map));
 
-function getTargetTask(job, id) {
+function matchJob(job) {
   for (let [regex, task] of JOB_TASK_MAP) {
-    if (job.match(new RegExp(regex))) {
+    if (regex === job || job.match(new RegExp(regex))) {
       return task;
     }
   }
+}
 
+function matchTask(id) {
   for (let [regex, task] of TASK_MAP) {
-    if (id.match(new RegExp(regex))) {
+    if (id === regex || id.match(new RegExp(regex))) {
       return task;
     }
   }
+}
 
-  return config.jira_clone_target_default_job;
+function getTargetTask(job, id) {
+  if (config.jira_clone_mapping_priority === 'job_to_task') {
+    return matchJob(job) || matchTask(id) || config.jira_clone_target_default_job;
+  } else {
+    return matchTask(id) || matchJob(job) || config.jira_clone_target_default_job;
+  }
 }
 
 function getMonday() {
@@ -139,18 +147,18 @@ function escapeQ(str) {
     });
 
     await promise;
-
-    console.log(JSON.stringify(logMap, null, 2));
-
-    const prompt = new Confirm('Are the logs ok?');
-    await prompt.run()
-      .then(async (answer) => {
-        if (!answer) {
-          await close();
-          process.exit(0);
-        }
-      });
   });
+
+  console.log(JSON.stringify(logMap, null, 2));
+
+  const prompt = new Confirm('Are the logs ok?');
+  await prompt.run()
+    .then(async (answer) => {
+      if (!answer) {
+        await close();
+        process.exit(0);
+      }
+    });
 
   const jiraTargetUrl = process.env.JIRA_CLONE_TARGET_URL + "/secure/TempoUserBoard!timesheet.jspa";
   await getBrowser(jiraTargetUrl, async (driver, close) => {
