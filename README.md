@@ -102,6 +102,8 @@ execute the required action set.
 
 ## Release notes
 
+> NOTE!!: After upgrading always run `wfconfigure`
+
 #### 1.2.0
 
 - Added option to configure which mapping should be with higher priority when cloning 
