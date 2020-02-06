@@ -104,6 +104,10 @@ execute the required action set.
 
 > NOTE!!: After upgrading always run `wfconfigure`
 
+#### 1.3.1
+
+- Fix issue with not working slack posting on merge creation.
+
 #### 1.3.0
 
 - Update chrome driver to v80.
