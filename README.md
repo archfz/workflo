@@ -104,6 +104,15 @@ execute the required action set.
 
 > NOTE!!: After upgrading always run `wfconfigure`
 
+#### 1.3.0
+
+- Update chrome driver to v80.
+- Improved speed of additions and removals calculation for bitbucket.
+- Fixed issue where slack was not including last character in MR URL.
+- Fixed issues where bitbucket was to slow and causing fails.
+- Fixed issue where bitbucket could not display changes because of too many changes
+ and it would fail.
+
 #### 1.2.0
 
 - Added option to configure which mapping should be with higher priority when cloning 

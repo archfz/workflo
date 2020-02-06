@@ -16,7 +16,7 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
     await driver.wait(until.elementLocated(By.id(process.env.BITBUCKET_MR_FORM_ID)), 10000);
     await driver.sleep(1000);
 
-    await driver.wait(until.elementLocated(By.css(`${process.env.BITBUCKET_MR_CLOSE_BRANCH_SELECTOR}`)), 10000);
+    await driver.wait(until.elementLocated(By.css(`${process.env.BITBUCKET_MR_CLOSE_BRANCH_SELECTOR}:not(:disabled)`)), 20000);
     await driver.findElement(By.css(`${process.env.BITBUCKET_MR_CLOSE_BRANCH_SELECTOR}`))
       .then((element) => {
         element.getAttribute('checked')
@@ -25,13 +25,13 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
           })
       });
 
-    await driver.wait(until.elementLocated(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']`)), 10000);
+    await driver.wait(until.elementLocated(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`)), 20000);
     const submit = await driver.findElement(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']`));
     await submit.click();
 
     await browserUtils.awaitUrlChange(driver);
 
-    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR)), 10000);
+    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR)), 35000);
     const title = await driver.findElement(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR));
     mergeRequestTitle = await title.getAttribute("innerHTML");
     mergeRequestUrl = await driver.getCurrentUrl();
@@ -39,24 +39,29 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
     const likesElement = await driver.findElement(By.css(process.env.BITBUCKET_MR_LIKES_SELECTOR));
     likes = await likesElement.getText();
 
+
+    try {
+      await driver.wait(until.elementLocated(By.xpath("//h1[contains(text(), \"Files changed\")]")), 25000);
+    } catch (e) {
+      console.error(e);
+      additions = '∞';
+      removes = '∞';
+      return;
+    }
+
     await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 10000);
     await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 10000);
 
-    const additionElements = await driver.findElements(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR));
-    await Promise.all(additionElements.map((element) => {
-      return element.getText().then((text) => additions += Number.parseInt(text, 10))
-    }));
-    const removalElements = await driver.findElements(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR));
-    await Promise.all(removalElements.map((element) => {
-      return element.getText().then((text) => removes += Number.parseInt(text, 10))
-    }));
+    additions = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML, 10) || 0) + total, 0)`);
+    removes = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML, 10) || 0) + total, 0)`);
+    removes = -removes;
   });
 
   return {
     mrTitle: mergeRequestTitle,
     mrRequestUrl: mergeRequestUrl,
     additions: additions,
-    removes: -removes,
+    removes: removes,
     likes: likes,
   };
 }

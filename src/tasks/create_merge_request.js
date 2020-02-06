@@ -81,19 +81,19 @@ async function setTaskStatusInCodeReview(driver) {
     await driver.wait(until.elementLocated(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR)), 10000);
     const titleTrimmed = taskTitle.length > 42 ? taskTitle.slice(0, 42) + ".." : taskTitle;
 
-    const message = `>:robot_face:  needs \`${2 - likes}\`:thumbsup_all:  :page_facing_up:\`-${removes}\` \`+${additions}\`  *${taskId}: ${titleTrimmed}* ${mergeRequestUrl}`.replace(/\n/g, '') + '\n';
+    const message = `>:robot_face:  needs \`${2 - likes}\`:thumbsup_all:  :page_facing_up:\`-${removes}\` \`+${additions}\`  *${taskId}: ${titleTrimmed}* ${mergeRequestUrl} `.replace(/\n/g, '') + '\n';
     console.log(`Writing to slack: ${message}`);
 
-    const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
-    await input.clear();
-
-    const messageParts = message.split(/([*`>:])/);
-
-    for (let i = 0; i < messageParts.length; i++) {
-      const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
-      await input.sendKeys(messageParts[i]);
-      await driver.sleep(20);
-    }
+    // const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
+    // await input.clear();
+    //
+    // const messageParts = message.split(/([*`>:])/);
+    //
+    // for (let i = 0; i < messageParts.length; i++) {
+    //   const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));
+    //   await input.sendKeys(messageParts[i]);
+    //   await driver.sleep(20);
+    // }
 
     await driver.sleep(2000);
   });
