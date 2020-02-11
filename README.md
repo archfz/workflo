@@ -109,13 +109,14 @@ execute the required action set.
 - Fix for the clone logger not being able to create the target logs since it lands on
 the wrong calendar page rather than the timesheet page.
 - Hotfix for cases when the browser terminates early.
-- Fixed issue where worklog time was failing to input in the field.
 - Fixed issue with billing week submission not working properly.
-- Added support for `feature` type of stories in JIRA.
+- Fixed issue where worklog time was failing to input in the field for `wfl` and `wfp`.
+- Added support for `feature` type of stories in JIRA for `wfs`.
 
 #### 1.3.1
 
-- Fix issue with not working slack posting on merge creation.
+- Fix issue with merge request URL not being written correctly to slack.
+- Additional timeout increases for bitbucket operations.
 
 #### 1.3.0
 
