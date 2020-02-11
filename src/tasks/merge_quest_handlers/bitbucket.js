@@ -27,11 +27,13 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
 
     await driver.wait(until.elementLocated(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`)), 20000);
     const submit = await driver.findElement(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']`));
+
+    await driver.sleep(1500);
     await submit.click();
 
     await browserUtils.awaitUrlChange(driver);
 
-    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR)), 35000);
+    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR)), 70000);
     const title = await driver.findElement(By.css(process.env.BITBUCKET_MR_TITLE_SELECTOR));
     mergeRequestTitle = await title.getAttribute("innerHTML");
     mergeRequestUrl = await driver.getCurrentUrl();

@@ -102,7 +102,16 @@ execute the required action set.
 
 ## Release notes
 
-> NOTE!!: After upgrading always run `wfconfigure`
+> NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
+
+#### 1.3.2
+
+- Fix for the clone logger not being able to create the target logs since it lands on
+the wrong calendar page rather than the timesheet page.
+- Hotfix for cases when the browser terminates early.
+- Fixed issue where worklog time was failing to input in the field.
+- Fixed issue with billing week submission not working properly.
+- Added support for `feature` type of stories in JIRA.
 
 #### 1.3.1
 

@@ -9,7 +9,7 @@ if [ "$description" == "" ]; then
 fi
 
 branch=$( git branch )
-taskId=$( echo "$branch" | grep \* | cut -d ' ' -f2 | sed -r 's/.*(story|.*sub_task|bug)\/([A-Za-z]+\-[0-9]+).*/\2/' )
+taskId=$( echo "$branch" | grep \* | cut -d ' ' -f2 | sed -r 's/.*(story|feature|.*sub_task|bug)\/([A-Za-z]+\-[0-9]+).*/\2/' )
 if [ "$description" == "" ]; then
 	printf "Could not determine the task ID from the branch name!"
 	printf "branch: $branch"

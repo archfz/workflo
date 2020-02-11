@@ -3,7 +3,7 @@
 set -e
 
 branch=$( git branch )
-taskId=$( echo "$branch" | grep \* | cut -d ' ' -f2 | sed -r 's/.*(story|[-_]{1}task|bug)\/([A-Za-z]+\-[0-9]+).*/\2/' )
+taskId=$( echo "$branch" | grep \* | cut -d ' ' -f2 | sed -r 's/.*(story|feature|[-_]{1}task|bug)\/([A-Za-z]+\-[0-9]+).*/\2/' )
 if [ "$taskId" == "" ]; then
 	printf "Could not determine the task ID from the branch name!"
 	printf "branch: $taskId"

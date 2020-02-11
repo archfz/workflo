@@ -160,7 +160,7 @@ function escapeQ(str) {
       }
     });
 
-  const jiraTargetUrl = process.env.JIRA_CLONE_TARGET_URL + "/secure/TempoUserBoard!timesheet.jspa";
+  const jiraTargetUrl = process.env.JIRA_CLONE_TARGET_URL + "/secure/TempoUserBoard!timesheet.jspa?classicView=true";
   await getBrowser(jiraTargetUrl, async (driver, close) => {
     await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_LOG_WORK_BUTTON_SELECTOR)), 10000);
 
@@ -195,10 +195,14 @@ function escapeQ(str) {
   });
 
   if (endDate.getDay() === 5) {
-    const jiraSubmitUrl = process.env.JIRA_CLONE_SUBMIT_WEEK_URL
-      .replace('{period}', dateFormat(endDate, 'ddmmyyyy'))
-      .replace('{username}', config.jira_clone_target_username);
-    await getBrowser(jiraSubmitUrl, async (driver, close) => {
+    const jiraTargetSubmitUrl = process.env.JIRA_CLONE_TARGET_URL + "/secure/TempoUserBoard!timesheet.jspa?classicView=true&periodType=BILLING&periodView=WEEK&period="
+      + dateFormat(startDate, 'ddmmyyyy');
+    await getBrowser(jiraTargetSubmitUrl, async (driver, close) => {
+      await driver.wait(until.elementLocated(By.css('.tempoaction-open-dialog-form')), 10000);
+
+      const openDialogButton = await driver.findElement(By.css('.tempoaction-open-dialog-form'));
+      await openDialogButton.click();
+
       await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_APPROVAL_REVIEWER_SELECTOR)), 10000);
       await driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_APPROVAL_REVIEWER_SELECTOR}").value=arguments[0]`, config.jira_clone_approver_id);
 
@@ -213,6 +217,8 @@ function escapeQ(str) {
       await driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_APPROVAL_COMMENT_SELECTOR}").value=arguments[0]`, joke);
       await driver.findElement(By.css(process.env.JIRA_CLONE_APPROVAL_SUBMIT_BTN_SELECTOR))
         .then((element) => element.click());
+
+      await driver.sleep(1500);
     });
   }
 })().catch(e => {

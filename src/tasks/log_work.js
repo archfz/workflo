@@ -25,7 +25,7 @@ const getBrowser = require('../get_browser');
 
     const form = await driver.findElement(By.css(process.env.FORM_WORKLOG_SELECTOR));
     await form.findElement(By.css(process.env.INPUT_LOG_WORK_TIME_SELECTOR)).then(async (element) => {
-      await driver.sleep(100);
+      await driver.sleep(1500);
       return element.sendKeys(`${logTime}h`);
     });
     await form.findElement(By.css(process.env.INPUT_LOG_WORK_DESCRIPTION_SELECTOR)).then((element) => {

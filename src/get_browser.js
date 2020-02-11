@@ -32,54 +32,66 @@ module.exports = async function (url, task) {
       .catch(e => {console.error(e);})
   };
 
-  try {
-    driver = await new Builder()
-      .forBrowser('chrome')
-      .setChromeOptions(new chrome.Options()
-        .addArguments([`user-data-dir=${os.homedir()}/.config/google-chrome/Default`])
-        .addArguments([`disable-popup-blocking`]))
-      .build();
-
+  const bootBrowser = async () => {
     try {
-      const cookies = JSON.parse(fs.readFileSync(cookiePath));
-      const cookiesPerDomain = {};
-      cookies.forEach((cookie) => (cookiesPerDomain[cookie.domain] &&
-        cookiesPerDomain[cookie.domain].push(cookie) || (cookiesPerDomain[cookie.domain] = [cookie]))
-      );
+      driver = await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(new chrome.Options()
+          .addArguments([`user-data-dir=${os.homedir()}/.config/google-chrome/Default`])
+          .addArguments([`disable-popup-blocking`]))
+        .build();
 
-      await Promise.all(Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
-        await driver.get("http://" + domain + "/");
-        return Promise.all(cookies.map((cookie) => driver.manage().addCookie(cookie)));
-      }));
-    } catch (e) {
-      if (e.code !== 'ENOENT') {
-        throw e;
+      try {
+        const cookies = JSON.parse(fs.readFileSync(cookiePath));
+        const cookiesPerDomain = {};
+        cookies.forEach((cookie) => (cookiesPerDomain[cookie.domain] &&
+          cookiesPerDomain[cookie.domain].push(cookie) || (cookiesPerDomain[cookie.domain] = [cookie]))
+        );
+
+        await Promise.all(Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
+          await driver.get("http://" + domain + "/");
+          return Promise.all(cookies.map((cookie) => driver.manage().addCookie(cookie)));
+        }));
+      } catch (e) {
+        if (e.code !== 'ENOENT') {
+          throw e;
+        }
       }
+    } catch (e) {
+      console.error(e);
+      if (e.message.indexOf('terminated early') !== -1) {
+        return await bootBrowser();
+      }
+      throw new Error("Browser failed starting");
     }
-  } catch (e) {
-    console.error(e);
-    throw new Error("Browser failed starting");
-  }
+  };
 
-  try {
-    await driver.get(url);
+  await bootBrowser();
 
-    let currentUrl;
-    do {
-      currentUrl = await driver.getCurrentUrl();
-    }  while (url !== currentUrl);
+  const doProcess = async () => {
+    try {
+      console.log(`Visiting: ${url}`);
+      await driver.get(url);
 
-    await task(driver, close);
-  } catch (e) {
-    console.error(e);
+      let currentUrl;
+      do {
+        currentUrl = await driver.getCurrentUrl();
+      }  while (url !== currentUrl);
 
-    if (e.name !== "NoSuchWindowError") {
-      await driver.sleep(10000);
+      await task(driver, close);
+    } catch (e) {
+      console.error(e);
+
+      if (e.name !== "NoSuchWindowError") {
+        await driver.sleep(10000);
+      }
+      e.isLogged = true;
+
+      throw e;
+    } finally {
+      await close();
     }
-    e.isLogged = true;
+  };
 
-    throw e;
-  } finally {
-    await close();
-  }
+  await doProcess();
 };
