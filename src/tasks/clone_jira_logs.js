@@ -179,13 +179,13 @@ function escapeQ(str) {
             driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_TIME_INPUT_SELECTOR}").value=arguments[0]`, data.time);
             driver.executeScript(`document.querySelector("${process.env.JIRA_CLONE_DESC_INPUT_SELECTOR}").value=arguments[0]`, data.description);
 
-            await driver.sleep(100);
+            await driver.sleep(200);
             const taskElement = await driver.findElement(By.css(process.env.JIRA_CLONE_ISSUE_INPUT_SELECTOR));
             await taskElement.sendKeys(taskId + "\n");
 
             return driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR))
               .then((element) => element.click())
-              .then(() => driver.sleep(1200));
+              .then(() => driver.sleep(2500));
           });
       });
     });

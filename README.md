@@ -104,6 +104,10 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.3.3
+
+- Extended wait times on jira cloning into target because of timeouts.
+
 #### 1.3.2
 
 - Fix for the clone logger not being able to create the target logs since it lands on
