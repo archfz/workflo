@@ -20,7 +20,7 @@ authentications so any page visited that requires that you first login. When sta
 a task and you have to login, in many cases after you've logged in you will have to 
 retry the command.
 
-- `Npm` and `node:^8`.
+- `Npm` and `node:^10`.
 - Chrome browser to be installed.
 - User account on dependent sites: pitech gitlab or bitbucket, source+target JIRA, slack. 
 - Manual login and relogin when sessions expire on the start of the automation.
@@ -102,6 +102,8 @@ well.
 
 ## Upcomming features
 
+- Checking for missing hours in clone log and in that case aborting the week
+submission.
 - Detection for login screens and await until the user logs in before attempting to
 execute the required action set. 
 - Maybe support for different messaging apps: +Skype.
@@ -110,10 +112,11 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
-#### 1.3.5 - 1.3.6
+#### 1.3.5 - 1.4.0
 
+- Updated chromedriver and NODE required version to >= 10.
 - Removed unnecessary selenium-standalone package.
-- Fixed security issue in minimist.
+- Fixed some security issues.
 
 #### 1.3.4
 
