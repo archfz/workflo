@@ -1,6 +1,6 @@
 {
   "name": "fzuzzy-workflo",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,7 +17,6 @@
     "inquirer": "^7.0.3",
     "pretty-error": "^2.1.1",
     "prompt-confirm": "^2.0.4",
-    "selenium-standalone": "^6.16.0",
     "selenium-webdriver": "^4.0.0-alpha.5"
   },
   "bin": {

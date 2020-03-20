@@ -110,8 +110,9 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
-#### 1.3.5
+#### 1.3.5 - 1.3.6
 
+- Removed unnecessary selenium-standalone package.
 - Fixed security issue in minimist.
 
 #### 1.3.4
