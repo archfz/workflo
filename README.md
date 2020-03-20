@@ -20,9 +20,9 @@ authentications so any page visited that requires that you first login. When sta
 a task and you have to login, in many cases after you've logged in you will have to 
 retry the command.
 
-- Npm and node:^8.
+- `Npm` and `node:^8`.
 - Chrome browser to be installed.
-- User account on dependent sites: gitlab, source+target JIRA, slack. 
+- User account on dependent sites: pitech gitlab or bitbucket, source+target JIRA, slack. 
 - Manual login and relogin when sessions expire on the start of the automation.
 - For commands that run in git repository branch names need to respect the following 
 formats: .\*(story|\[-_\]{1}task|bug)\/(\[A-Za-z]+\-\[0-9]+).\*.
@@ -79,6 +79,12 @@ wfconfigure
 - Configures this tool by CLI form.
 
 ```bash
+wfcleancookies
+```
+- Cleans save cookies. Can be useful with CSRF or session problems. You will have to
+re-login after this on sites.
+
+```bash
 wfclonelog [fromDate?] [toDate?]
 ```
 - Clones logs from Summit JIRA to pitech JIRA, so that you only have to manually add
@@ -103,6 +109,12 @@ execute the required action set.
 ## Release notes
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
+
+#### 1.3.4
+
+- Fixed issue with sameSite='None' cookies issue.
+- Added command for clearing saved cookies in case of cookie related issues.
+- Improved error logging in console.
 
 #### 1.3.3
 

@@ -155,7 +155,6 @@ function escapeQ(str) {
   await prompt.run()
     .then(async (answer) => {
       if (!answer) {
-        await close();
         process.exit(0);
       }
     });

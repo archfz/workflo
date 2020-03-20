@@ -12,12 +12,14 @@ fi
 
 status=$( git status -sb )
 targetBranch=$( echo "$status" | grep \#\# | sed -r 's/.*\.\.\.[^\/]+\/([A-Za-Z0-9\/]+).*/\1/' )
+printf "Target branch is: $targetBranch\n"
 if [ "$targetBranch" == "" ]; then
 	printf "Could not determine the target branch from the status!\n"
 	printf "status: $status\n"
 	exit 1
 fi
 currentBranch=$( echo "$status" | grep \#\# | sed -r 's/\#\#\s*([^\.]+)\.\.\..*/\1/' )
+printf "Current branch is: $currentBranch\n"
 if [ "$currentBranch" == "" ]; then
 	printf "Could not determine the current branch from the status!\n"
 	printf "status: $status\n"

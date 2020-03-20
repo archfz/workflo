@@ -5,6 +5,8 @@ const chrome = require('selenium-webdriver/chrome');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const PrettyError = require('pretty-error');
+const pe = new PrettyError();
 
 const COOKIES_PATH = conf.store_path + "/cookies/{name}.json";
 
@@ -29,7 +31,7 @@ module.exports = async function (url, task) {
     fs.writeFileSync(cookiePath, JSON.stringify(cookies));
 
     await driver.quit()
-      .catch(e => {console.error(e);})
+      .catch(e => {console.error(pe.render(e));})
   };
 
   const bootBrowser = async () => {
@@ -44,9 +46,17 @@ module.exports = async function (url, task) {
       try {
         const cookies = JSON.parse(fs.readFileSync(cookiePath));
         const cookiesPerDomain = {};
-        cookies.forEach((cookie) => (cookiesPerDomain[cookie.domain] &&
-          cookiesPerDomain[cookie.domain].push(cookie) || (cookiesPerDomain[cookie.domain] = [cookie]))
-        );
+        cookies.forEach((cookie) => {
+          if (cookiesPerDomain[cookie.domain]) {
+            cookiesPerDomain[cookie.domain].push(cookie)
+          } else {
+            cookiesPerDomain[cookie.domain] = [cookie]
+          }
+
+          if (cookie['sameSite'] === 'None') {
+            delete cookie['sameSite'];
+          }
+        });
 
         await Promise.all(Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
           await driver.get("http://" + domain + "/");
@@ -58,15 +68,22 @@ module.exports = async function (url, task) {
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error(pe.render(e));
       if (e.message.indexOf('terminated early') !== -1) {
         return await bootBrowser();
+      } else if (e.message.indexOf('user data directory is already in use') !== -1) {
+        throw new Error("Please close existing automated chrome windows in order to start the script!");
       }
       throw new Error("Browser failed starting");
     }
   };
 
-  await bootBrowser();
+  try {
+    await bootBrowser();
+  } catch (e) {
+    console.error(pe.render(e));
+    process.exit(2);
+  }
 
   const doProcess = async () => {
     try {
@@ -80,7 +97,7 @@ module.exports = async function (url, task) {
 
       await task(driver, close);
     } catch (e) {
-      console.error(e);
+      console.error(pe.render(e));
 
       if (e.name !== "NoSuchWindowError") {
         await driver.sleep(10000);
