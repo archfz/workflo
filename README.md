@@ -110,6 +110,10 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.3.5
+
+- Fixed security issue in minimist.
+
 #### 1.3.4
 
 - Fixed issue with sameSite='None' cookies issue.
