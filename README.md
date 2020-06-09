@@ -112,6 +112,11 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.4.1 - 1.4.2
+
+- Security update.
+- Fix integration with bitbucket for MR creation using the new UI.
+
 #### 1.3.5 - 1.4.0
 
 - Updated chromedriver and NODE required version to >= 10.

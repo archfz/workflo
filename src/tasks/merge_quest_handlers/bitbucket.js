@@ -25,10 +25,9 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
           })
       });
 
+    await driver.sleep(500);
     await driver.wait(until.elementLocated(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`)), 20000);
-    const submit = await driver.findElement(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']`));
-
-    await driver.sleep(1500);
+    const submit = await driver.findElement(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`));
     await submit.click();
 
     await browserUtils.awaitUrlChange(driver);
@@ -38,25 +37,14 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
     mergeRequestTitle = await title.getAttribute("innerHTML");
     mergeRequestUrl = await driver.getCurrentUrl();
 
-    const likesElement = await driver.findElement(By.css(process.env.BITBUCKET_MR_LIKES_SELECTOR));
-    likes = await likesElement.getText();
-
-
-    try {
-      await driver.wait(until.elementLocated(By.xpath("//h1[contains(text(), \"Files changed\")]")), 25000);
-    } catch (e) {
-      console.error(e);
-      additions = '∞';
-      removes = '∞';
-      return;
-    }
+    const likesElement = await driver.findElements(By.css(process.env.BITBUCKET_MR_LIKES_SELECTOR));
+    likes = likesElement.length - 1;
 
     await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 10000);
     await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 10000);
 
-    additions = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML, 10) || 0) + total, 0)`);
-    removes = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML, 10) || 0) + total, 0)`);
-    removes = -removes;
+    additions = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
+    removes = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
   });
 
   return {

@@ -66,6 +66,9 @@ async function setTaskStatusInCodeReview(driver) {
   });
 
   const data = await MERGE_REQUEST_CREATION_HANDLERS[repoType](project, currentBranch, targetBranch);
+  console.log('Merge request data:');
+  console.log(data);
+
   const shortUrlPost = 'http://tinyurl.com/api-create.php?url=' + encodeURIComponent(data.mrRequestUrl);
   console.log(`Acquiring short url from: ${shortUrlPost}`);
   await axios.get(shortUrlPost)
