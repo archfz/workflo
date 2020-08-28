@@ -38,6 +38,28 @@ async function configure() {
     .then(answers => allAnswers = {...allAnswers, ...answers});
 
   console.log("");
+  console.log("Configuring source JIRA: ");
+
+  await inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "source_jira_url",
+        message: "Source Jira URL",
+        validate: (value) => !!value || "Invalid source URL.",
+        default: config.source_jira_url || "",
+      },
+      {
+        type: "list",
+        choices: ["inchcape", "summit"],
+        name: "source_jira_handler",
+        message: "Source JIRA handler",
+        default: config.source_jira_handler || "inchcape",
+      }
+    ])
+    .then(answers => allAnswers = {...allAnswers, ...answers});
+
+  console.log("");
   console.log("Configuring JIRA log cloner: ");
 
   await inquirer

@@ -1,42 +1,21 @@
 const conf = require('../init');
-const {By, until} = require('selenium-webdriver');
+const config = require('../config');
 const getBrowser = require('../get_browser');
 const browserUtils = require('../browser_utils');
-
-async function setTaskStatusInProgress(driver) {
-  return driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID))
-    .then(async element => {
-      const status = await element.getText();
-
-      if (status.toLowerCase() !== process.env.TASK_IN_PROGRESS_LABEL.toLowerCase()) {
-          const startProgressBtn = await driver.findElement(By.id(process.env.START_PROGRESS_BUTTON_ACTION_ID));
-          await startProgressBtn.click();
-
-          try {
-            await driver.sleep(100);
-            const element = await driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID));
-            await driver.wait(until.elementTextIs(element, process.env.TASK_IN_PROGRESS_LABEL), 4000);
-          } catch (e) {
-            console.warn(e);
-          }
-      }
-
-      return status;
-    });
-}
+const JiraHandler = require('./source_jira_handlers/handler');
 
 (async function () {
   const taskId = process.argv[2];
-  const url = process.env.JIRA_BASE_URL + "/browse/" + taskId;
+  const url = config.source_jira_url + "/browse/" + taskId;
 
   await getBrowser(url, async (driver) => {
-    await driver.wait(until.elementLocated(By.id(process.env.TASK_TITLE_ELEMENT_ID)), 10000);
+    const handler = new JiraHandler(driver);
 
     const promises = [];
-    promises.push(driver.findElement(By.id(process.env.TASK_TITLE_ELEMENT_ID))
-      .then((element) => element.getText())
+    promises.push(handler.acquireTaskTitle()
       .then((taskTitle) => {
         console.log('Actual title: ', taskTitle);
+
         let taskTitleParts = taskTitle
           .replace(/-*/g, '')
           .toLowerCase()
@@ -54,42 +33,32 @@ async function setTaskStatusInProgress(driver) {
         console.log(">TASK-TITLE: " +taskTitleParts.join('_'));
       }));
 
-    promises.push(
-      setTaskStatusInProgress(driver).then((status) => {
-        console.log(`>STATUS: ${status}`);
-      })
-      .catch((e) => {
-        console.error(e);
-        console.error('Failed setting parent in progress.');
-      })
-      .then(async () => {
-        let assignTask;
-
-        try {
-          assignTask = await driver.findElement(By.id(process.env.ASSIGN_SELF_TO_TASK_BUTTON_ID));
-        } catch (e) {
-          console.error(e);
-          return;
-        }
-
-        return assignTask.click();
-      })
-    );
-
-    promises.push(driver.findElement(By.id(process.env.TASK_TYPE_ELEMENT_ID))
-      .then((element) => element.getText())
+    promises.push(handler.acquireTaskType()
       .then((type) => {
         console.log(">TASK-TYPE: " + type.toLowerCase()
           .replace(/[^a-zA-Z]+/g, '_'));
       }));
 
+    promises.push(
+      handler.setTaskStatusInProgress().then((status) => {
+        console.log(`>STATUS: ${status}`);
+      })
+      .catch((e) => {
+        console.error(e.message ? e.message : e);
+        console.error('Failed setting parent in progress.');
+      })
+      .then(() => handler.assignSelfToTask()).catch((e) => {
+        console.error('Failed to assign task to self. Assuming it is already assigned.');
+        console.error(e.message ? e.message : e);
+      })
+    );
+
     await Promise.all(promises);
 
-    const parents = await driver.findElements(By.id(process.env.LINK_PARENT_ISSUE_ID));
-    if (parents.length > 0) {
-      const link = driver.findElement(By.id(process.env.LINK_PARENT_ISSUE_ID));
-      await browserUtils.navigateToLink(driver, link);
-      await setTaskStatusInProgress(driver).catch((e) => {
+    const parentLink = await handler.acquireParentTaskLink();
+    if (parentLink) {
+      await browserUtils.navigateToLink(driver, parentLink);
+      await handler.setTaskStatusInProgress().catch((e) => {
         console.error(e);
         console.error('Failed setting parent in progress.');
       });

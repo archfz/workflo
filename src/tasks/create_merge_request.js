@@ -4,35 +4,12 @@ const {By, until} = require('selenium-webdriver');
 const getBrowser = require('../get_browser');
 const browserUtils = require('../browser_utils');
 const axios = require('axios');
+const JiraHandler = require('./source_jira_handlers/handler');
 
 const MERGE_REQUEST_CREATION_HANDLERS = {
   "gitlab": require('./merge_quest_handlers/gitlab'),
   "bitbucket": require('./merge_quest_handlers/bitbucket'),
 };
-
-async function setTaskStatusInCodeReview(driver) {
-  return driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID))
-    .then(async element => {
-      const status = await element.getText();
-
-      if (status.toLowerCase() !== process.env.TASK_IN_CODE_REVIEW_LABEL.toLowerCase()) {
-        const moreOptions = await driver.findElement(By.id(process.env.MORE_WORKLOW_OPTION_BUTTON_ID));
-        await moreOptions.click();
-        const setInCodeReviewButton = await driver.findElement(By.id(process.env.SET_IN_CODEREVIEW_BUTTON_ACTION_ID));
-        await setInCodeReviewButton.click();
-
-        try {
-          await driver.sleep(100);
-          const element = await driver.findElement(By.id(process.env.TASK_PROGRESS_ELEMENT_ID));
-          await driver.wait(until.elementTextIs(element, process.env.TASK_IN_CODE_REVIEW_LABEL), 4000);
-        } catch (e) {
-          console.warn(e);
-        }
-      }
-
-      return status;
-    });
-}
 
 (async function () {
   const taskId = process.argv[2];
@@ -47,19 +24,20 @@ async function setTaskStatusInCodeReview(driver) {
 
   let mergeRequestTitle, mergeRequestUrl, additions, removes, likes, taskTitle;
 
-  const jiraUrl = process.env.JIRA_BASE_URL + "/browse/" + taskId;
+  const jiraUrl = config.source_jira_url + "/browse/" + taskId;
   await getBrowser(jiraUrl, async (driver) => {
-    await driver.wait(until.elementLocated(By.id(process.env.TASK_TITLE_ELEMENT_ID)), 10000);
-    const titleElement = await driver.findElement(By.id(process.env.TASK_TITLE_ELEMENT_ID));
-    taskTitle = await titleElement.getText();
+    const handler = new JiraHandler(driver);
+    taskTitle = await handler.acquireTaskTitle();
 
-    await setTaskStatusInCodeReview(driver);
+    await handler.setTaskStatusInCodeReview(driver);
 
-    const parents = await driver.findElements(By.id(process.env.LINK_PARENT_ISSUE_ID));
-    if (parents.length > 0) {
-      const link = driver.findElement(By.id(process.env.LINK_PARENT_ISSUE_ID));
-      await browserUtils.navigateToLink(driver, link);
-      await setTaskStatusInCodeReview(driver);
+    const parentLink = await handler.acquireParentTaskLink();
+    if (parentLink) {
+      await browserUtils.navigateToLink(driver, parentLink);
+      await handler.setTaskStatusInCodeReview().catch((e) => {
+        console.error(e);
+        console.error('Failed setting parent in progress.');
+      });
     }
   }).catch((error) => {
     console.error("Failed setting task status.", error);
@@ -84,7 +62,7 @@ async function setTaskStatusInCodeReview(driver) {
     await driver.wait(until.elementLocated(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR)), 10000);
     const titleTrimmed = taskTitle.length > 42 ? taskTitle.slice(0, 42) + ".." : taskTitle;
 
-    const message = `>:robot_face:  needs \`${2 - likes}\`:thumbsup_all:  :page_facing_up:\`-${removes}\` \`+${additions}\`  *${taskId}: ${titleTrimmed}* ${mergeRequestUrl} `.replace(/\n/g, '') + '\n';
+    const message = `>:robot_face:  :page_facing_up:\`-${removes}\` \`+${additions}\`  {${project}} *${taskId}: ${titleTrimmed}* ${mergeRequestUrl} `.replace(/\n/g, '') + '|\n';
     console.log(`Writing to slack: ${message}`);
 
     const input = driver.findElement(By.css(process.env.SLACK_MESSAGE_INPUT_SELECTOR));

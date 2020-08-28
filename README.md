@@ -112,6 +112,13 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.5.0
+
+- Added support for multiple source JIRA handlers. Refactored summit one and
+added inchcape one.
+- Various fixes in source jira handlers and bitbucket handler.
+- Improvements on slack merge request printing format.
+
 #### 1.4.1 - 1.4.2
 
 - Security update.

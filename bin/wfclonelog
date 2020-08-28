@@ -2,6 +2,13 @@
 
 set -e
 
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+  echo "wfclonelog [start-date?] [end-date?]"
+  echo ""
+  echo "Date format: YYYY-mm-dd. Ommit dates to default to current week. To prevent full week submission define end date as not the friday of the week."
+  exit 0
+fi
+
 set -o pipefail
 results=$(wfmain "clone_jira_logs" "$1" "$2" | tee /dev/tty )
 set +o pipefail

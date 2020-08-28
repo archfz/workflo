@@ -5,6 +5,7 @@ const getBrowser = require('../get_browser');
 const Confirm = require('prompt-confirm');
 const dateFormat = require('dateformat');
 const axios = require('axios');
+const JiraHandler = require('./source_jira_handlers/handler');
 
 const TASK_MAP = Object.entries(JSON.parse(config.jira_clone_task_to_task_map));
 const JOB_TASK_MAP = Object.entries(JSON.parse(config.jira_clone_job_to_task_map));
@@ -71,82 +72,13 @@ function escapeQ(str) {
   }
   endDate.setHours(23);
 
-  const jiraFromUrl = (process.env.JIRA_BASE_URL + process.env.JIRA_CLONE_SOURCE_PATH)
-    .replace('{from}', dateFormat(startDate, 'yyyy-mm-dd'))
-    .replace('{to}', dateFormat(endDate, 'yyyy-mm-dd'));
-  const logMap = {};
+  const jiraFromUrl = config.source_jira_url + '/' +
+    (new JiraHandler()).getPathCloneLogsFrom(dateFormat(startDate, 'yyyy-mm-dd'), dateFormat(endDate, 'yyyy-mm-dd'));
+  let logMap = {};
 
   await getBrowser(jiraFromUrl, async (driver, close) => {
-    await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR)), 10000);
-
-    await driver.findElement(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR))
-      .then((element) => element.click());
-    await driver.sleep(1500);
-    await driver.findElement(By.css(process.env.JIRA_CLONE_DATE_FROM_SELECTOR))
-      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(startDate, 'dd/mmm/yyyy')));
-    await driver.findElement(By.css(process.env.JIRA_CLONE_DATE_TO_SELECTOR))
-      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(endDate, 'dd/mmm/yyyy')));
-    await driver.findElement(By.xpath(process.env.JIRA_CLONE_APPLY_DATE_BUTTON_XPATH))
-      .then(element => element.click());
-
-    await driver.sleep(1500);
-    await driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR)), 10000);
-
-    const elements = await driver.findElements(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR));
-    console.log(`Found ${elements.length} logs.`);
-    let promise = Promise.resolve();
-
-    elements.forEach((element, index) => {
-      promise = promise.then(async () => {
-        await element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_JOB_SELECTOR))
-          .catch(e => console.warn(`Skipping row ${index}`));
-
-        await driver.executeScript("arguments[0].scrollIntoView(true)", element);
-        await driver.sleep(100);
-
-        let promises = [
-          element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_TIME_SELECTOR)).then(element => element.getText()),
-          element.findElement(By.css(process.env.JIRA_CLONE_TASK_DAY_SELECTOR)).then(element => element.getText()),
-          element.findElement(By.css(process.env.JIRA_CLONE_TASK_ID_SELECTOR)).then(element => element.getText()),
-          element.findElement(By.css(process.env.JIRA_CLONE_TASK_DESCRIPTION_SELECTOR)).then(element => element.getText()),
-          element.findElement(By.css(process.env.JIRA_CLONE_TASK_LOG_JOB_SELECTOR)).then(element => element.getAttribute('value')),
-        ];
-
-        await Promise.all(promises)
-          .then(([time, day, id, description, job]) => {
-            if (!id) {
-              console.warn(`WARNING: Skipping log on index ${index}. ID not found. Other data: ${time} ${day} ${job} ${description}`);
-              return;
-            }
-
-            const dayDate = new Date(day);
-            dayDate.setHours(6);
-            if (dayDate < startDate || dayDate > endDate) {
-              console.warn(`WARNING: Skipping ${index}. Date '${day}' not in range.`);
-              return;
-            }
-
-            const target = getTargetTask(job, id);
-
-            if (!logMap[day]) {
-              logMap[day] = {};
-            }
-            if (!logMap[day][target]) {
-              logMap[day][target] = { time: 0, description: "" };
-            }
-
-            const timeFloat = parseFloat(time);
-            if (isNaN(timeFloat)) {
-              throw new Error(`Failed to calculate time log from '${time}'.`);
-            }
-
-            logMap[day][target].time += timeFloat;
-            logMap[day][target].description += id + ": " + description + "\n";
-          });
-      });
-    });
-
-    await promise;
+    await new JiraHandler(driver).acquireLogs(getTargetTask, startDate, endDate)
+      .then((result) => logMap = result);
   });
 
   console.log(JSON.stringify(logMap, null, 2));
@@ -184,7 +116,7 @@ function escapeQ(str) {
 
             return driver.findElement(By.css(process.env.JIRA_CLONE_LOG_WORK_SUBMIT_BUTTON_SELECTOR))
               .then((element) => element.click())
-              .then(() => driver.sleep(2500));
+              .then(() => driver.sleep(800));
           });
       });
     });
@@ -217,7 +149,7 @@ function escapeQ(str) {
       await driver.findElement(By.css(process.env.JIRA_CLONE_APPROVAL_SUBMIT_BTN_SELECTOR))
         .then((element) => element.click());
 
-      await driver.sleep(1500);
+      await driver.sleep(2000);
     });
   }
 })().catch(e => {

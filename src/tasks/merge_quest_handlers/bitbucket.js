@@ -40,8 +40,23 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
     const likesElement = await driver.findElements(By.css(process.env.BITBUCKET_MR_LIKES_SELECTOR));
     likes = likesElement.length - 1;
 
-    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 10000);
-    await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 10000);
+    let failedWaits = 0;
+    try {
+      await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 10000);
+    } catch (e) {
+      console.error(e);
+      failedWaits++;
+    }
+    try {
+      await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 10000);
+    } catch (e) {
+      console.error(e);
+      failedWaits++;
+    }
+
+    if (failedWaits === 2) {
+      throw new Error(`Could not find any additions or removals information.`);
+    }
 
     additions = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
     removes = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
