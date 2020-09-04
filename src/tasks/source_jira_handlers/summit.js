@@ -122,13 +122,17 @@ module.exports = class SummitJira {
 
     await this.driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR)), 10000);
 
+    await this.driver.sleep(100);
     await this.driver.findElement(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR))
       .then((element) => element.click());
-    await this.driver.sleep(1500);
+    await this.driver.sleep(100);
+    console.log('Setting from and to dates.')
     await this.driver.findElement(By.css(process.env.JIRA_CLONE_DATE_FROM_SELECTOR))
       .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(startDate, 'dd/mmm/yyyy')));
     await this.driver.findElement(By.css(process.env.JIRA_CLONE_DATE_TO_SELECTOR))
       .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(endDate, 'dd/mmm/yyyy')));
+    await this.driver.sleep(100);
+    console.log('Applying date filters.')
     await this.driver.findElement(By.xpath(process.env.JIRA_CLONE_APPLY_DATE_BUTTON_XPATH))
       .then(element => element.click());
 

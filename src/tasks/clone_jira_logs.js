@@ -81,7 +81,15 @@ function escapeQ(str) {
       .then((result) => logMap = result);
   });
 
-  console.log(JSON.stringify(logMap, null, 2));
+  console.log(JSON.stringify(logMap, null, 2) + '\n');
+
+  Object.entries(logMap).forEach(([day, logs]) => {
+    let total = 0;
+    Object.values(logs).forEach((log) => {
+      total += log.time;
+    }, 0);
+    console.log(`${day} ${total}h`);
+  });
 
   const prompt = new Confirm('Are the logs ok?');
   await prompt.run()

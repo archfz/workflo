@@ -112,6 +112,15 @@ execute the required action set.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.5.2
+
+- Fix log cloning issue.
+- Add addition cloning information before confirmation.
+
+#### 1.5.1
+
+- Chromedriver update for v85 support.
+
 #### 1.5.0
 
 - Added support for multiple source JIRA handlers. Refactored summit one and
