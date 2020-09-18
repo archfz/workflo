@@ -1,6 +1,6 @@
 const conf = require('./init');
 require('chromedriver');
-const {Builder} = require('selenium-webdriver');
+const {Builder, By} = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const fs = require('fs');
 const os = require('os');
@@ -90,10 +90,24 @@ module.exports = async function (url, task) {
       console.log(`Visiting: ${url}`);
       await driver.get(url);
 
-      let currentUrl;
+      let notLoggedIn = true;
       do {
-        currentUrl = await driver.getCurrentUrl();
-      }  while (url !== currentUrl);
+        try {
+          await driver.findElement(By.css('input[type=password]'));
+        } catch (e) {
+          if (e.name === 'NoSuchElementError') {
+            notLoggedIn = false;
+          } else {
+            console.error(pe.render(e));
+            process.exit(1);
+          }
+        }
+
+        if (notLoggedIn) {
+          console.log('Detected login screen. Please login.');
+          await driver.sleep(1000);
+        }
+      } while(notLoggedIn);
 
       await task(driver, close);
     } catch (e) {

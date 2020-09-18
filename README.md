@@ -104,13 +104,16 @@ well.
 
 - Checking for missing hours in clone log and in that case aborting the week
 submission.
-- Detection for login screens and await until the user logs in before attempting to
-execute the required action set. 
 - Maybe support for different messaging apps: +Skype.
 
 ## Release notes
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
+
+#### 1.6.0
+
+- Added login screen detection to not require restart of the commands when not logged in.
+- Fixed integration issue with log cloning from Summit.
 
 #### 1.5.2
 
