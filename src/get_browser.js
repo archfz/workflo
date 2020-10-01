@@ -28,7 +28,7 @@ module.exports = async function (url, task) {
   const close = async () => {
     const cookies = await driver.manage().getCookies();
     ensureDirectoryExistence(cookiePath);
-    fs.writeFileSync(cookiePath, JSON.stringify(cookies));
+    fs.writeFileSync(cookiePath, JSON.stringify(cookies, null, 2));
 
     await driver.quit()
       .catch(e => {console.error(pe.render(e));})
@@ -47,19 +47,16 @@ module.exports = async function (url, task) {
         const cookies = JSON.parse(fs.readFileSync(cookiePath));
         const cookiesPerDomain = {};
         cookies.forEach((cookie) => {
-          if (cookiesPerDomain[cookie.domain]) {
-            cookiesPerDomain[cookie.domain].push(cookie)
-          } else {
-            cookiesPerDomain[cookie.domain] = [cookie]
+          const domain = cookie.domain.indexOf('.') === 0 ? cookie.domain.substring(1) : cookie.domain;
+          if (!cookiesPerDomain[domain]) {
+            cookiesPerDomain[domain] = [cookie]
           }
-
-          if (cookie['sameSite'] === 'None') {
-            delete cookie['sameSite'];
-          }
+          cookiesPerDomain[domain].push(cookie);
         });
 
         await Promise.all(Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
-          await driver.get("http://" + domain + "/");
+          await driver.get("https://" + domain);
+          await driver.manage().deleteAllCookies();
           return Promise.all(cookies.map((cookie) => driver.manage().addCookie(cookie)));
         }));
       } catch (e) {

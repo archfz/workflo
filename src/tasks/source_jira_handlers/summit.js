@@ -96,7 +96,7 @@ module.exports = class SummitJira {
       return element.sendKeys(`${description}`);
     });
 
-    const logWorkSubmit = await form.findElement(By.css(process.env.LOG_WORK_BUTTON_SELECTOR));
+    const logWorkSubmit = await this.driver.findElement(By.css("button[name='submitWorklogButton']"));
     await logWorkSubmit.click();
     await this.driver.sleep(500);
     await this.driver.findElements(By.css(process.env.LOG_WORK_ERROR_CONTAINER_SELCTOR + " *"))
@@ -108,7 +108,7 @@ module.exports = class SummitJira {
             });
         }
       });
-    await this.driver.sleep(2500);
+    await this.driver.sleep(500);
   }
 
   getPathCloneLogsFrom(startDate, endDate) {

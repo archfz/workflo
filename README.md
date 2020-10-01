@@ -110,6 +110,11 @@ submission.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.6.1
+
+- Fix worklog integration issue with Summit Jira.
+- Fix cookie issue with Summit Jira not properly retaining session.
+
 #### 1.6.0
 
 - Added login screen detection to not require restart of the commands when not logged in.
