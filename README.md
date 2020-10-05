@@ -110,6 +110,10 @@ submission.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.6.2
+
+- Fix same site None cookie regression.
+
 #### 1.6.1
 
 - Fix worklog integration issue with Summit Jira.

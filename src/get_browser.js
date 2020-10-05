@@ -51,6 +51,9 @@ module.exports = async function (url, task) {
           if (!cookiesPerDomain[domain]) {
             cookiesPerDomain[domain] = [cookie]
           }
+          if (cookie['sameSite'] === 'None') {
+            delete cookie['sameSite'];
+          }
           cookiesPerDomain[domain].push(cookie);
         });
 
