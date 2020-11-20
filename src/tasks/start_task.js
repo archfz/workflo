@@ -45,7 +45,7 @@ const JiraHandler = require('./source_jira_handlers/handler');
       })
       .catch((e) => {
         console.error(e.message ? e.message : e);
-        console.error('Failed setting parent in progress.');
+        console.error('Failed setting task in progress.');
       })
       .then(() => handler.assignSelfToTask()).catch((e) => {
         console.error('Failed to assign task to self. Assuming it is already assigned.');

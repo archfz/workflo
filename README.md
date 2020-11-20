@@ -110,6 +110,11 @@ submission.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.6.3
+
+- Update action IDs for summit jira to set in code review and progress.
+- Improve summit clone log.
+
 #### 1.6.2
 
 - Fix same site None cookie regression.

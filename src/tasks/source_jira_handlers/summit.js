@@ -37,6 +37,8 @@ module.exports = class SummitJira {
         const status = await element.getText();
 
         if (status.toLowerCase() !== process.env.TASK_IN_PROGRESS_LABEL.toLowerCase()) {
+          const moreActions = await this.driver.findElement(By.css('#opsbar-transitions_more'));
+          await moreActions.click();
           const startProgressBtn = await this.driver.findElement(By.id(process.env.START_PROGRESS_BUTTON_ACTION_ID));
           await startProgressBtn.click();
 
@@ -59,7 +61,7 @@ module.exports = class SummitJira {
         const status = await element.getText();
 
         if (status.toLowerCase() !== process.env.TASK_IN_CODE_REVIEW_LABEL.toLowerCase()) {
-          const moreOptions = await this.driver.findElement(By.id(process.env.MORE_WORKLOW_OPTION_BUTTON_ID));
+          const moreOptions = await this.driver.findElement(By.css('#opsbar-transitions_more'));
           await moreOptions.click();
           const setInCodeReviewButton = await this.driver.findElement(By.id(process.env.SET_IN_CODEREVIEW_BUTTON_ACTION_ID));
           await setInCodeReviewButton.click();
@@ -112,7 +114,7 @@ module.exports = class SummitJira {
   }
 
   getPathCloneLogsFrom(startDate, endDate) {
-    return (process.env.JIRA_CLONE_SOURCE_PATH)
+    return '/secure/Tempo.jspa#/my-work/timesheet?columns=WORKED_COLUMN&columns=_Job_&columns=ACCOUNT_COLUMN&dateDisplayType=days&from={from}&groupBy=worklog&periodKey&periodType=FIXED&subPeriodType=MONTH&to={to}&viewType=LIST'
       .replace('{from}', startDate)
       .replace('{to}', endDate);
   }
@@ -120,23 +122,6 @@ module.exports = class SummitJira {
   async acquireLogs(getTargetTask, startDate, endDate) {
     const logMap = {};
 
-    await this.driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR)), 10000);
-
-    await this.driver.sleep(100);
-    await this.driver.findElement(By.css(process.env.JIRA_CLONE_OPEN_DATE_BUTTON_SELECTOR))
-      .then((element) => element.click());
-    await this.driver.sleep(100);
-    console.log('Setting from and to dates.')
-    await this.driver.findElement(By.css(process.env.JIRA_CLONE_DATE_FROM_SELECTOR))
-      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(startDate, 'dd/mmm/yyyy')));
-    await this.driver.findElement(By.css(process.env.JIRA_CLONE_DATE_TO_SELECTOR))
-      .then(element => element.sendKeys('\b'.repeat(20) + dateFormat(endDate, 'dd/mmm/yyyy')));
-    await this.driver.sleep(100);
-    console.log('Applying date filters.')
-    await this.driver.findElement(By.xpath(process.env.JIRA_CLONE_APPLY_DATE_BUTTON_XPATH))
-      .then(element => element.click());
-
-    await this.driver.sleep(1500);
     await this.driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR)), 10000);
 
     const elements = await this.driver.findElements(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR));
