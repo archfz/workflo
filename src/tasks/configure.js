@@ -51,7 +51,7 @@ async function configure() {
       },
       {
         type: "list",
-        choices: ["inchcape", "summit"],
+        choices: ["inchcape", "inchcape-new-ui", "summit"],
         name: "source_jira_handler",
         message: "Source JIRA handler",
         default: config.source_jira_handler || "inchcape",

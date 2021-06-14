@@ -57,15 +57,29 @@ module.exports = async function (url, task) {
           cookiesPerDomain[domain].push(cookie);
         });
 
-        await Promise.all(Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
-          await driver.get("https://" + domain);
-          await driver.manage().deleteAllCookies();
-          return Promise.all(cookies.map((cookie) => driver.manage().addCookie(cookie)));
-        }));
+        let cookieSetPromise = Promise.resolve();
+        Object.entries(cookiesPerDomain).map(async ([domain, cookies]) => {
+          cookieSetPromise = cookieSetPromise.then(async () => {
+            await driver.get("https://" + domain);
+            await driver.manage().deleteAllCookies();
+            return Promise.all(cookies.map((cookie) => {
+              if (cookie.name.toLowerCase() === 'csrftoken') {
+                return;
+              }
+
+              console.log(`Adding cookie ${cookie.name} on ${cookie.domain}.`)
+              driver.manage().addCookie(cookie);
+            }));
+          });
+        });
+
+        await cookieSetPromise;
       } catch (e) {
         if (e.code !== 'ENOENT') {
           throw e;
         }
+
+        await driver.executeScript("document.body.style.zoom='100%';");
       }
     } catch (e) {
       console.error(pe.render(e));
@@ -90,16 +104,21 @@ module.exports = async function (url, task) {
       console.log(`Visiting: ${url}`);
       await driver.get(url);
 
-      let notLoggedIn = true;
+      let elementCssLoginScreenIndicators = ['[data-qa="signin_domain_input"]', 'input[type=password]']
+      let notLoggedIn = false;
       do {
-        try {
-          await driver.findElement(By.css('input[type=password]'));
-        } catch (e) {
-          if (e.name === 'NoSuchElementError') {
-            notLoggedIn = false;
-          } else {
-            console.error(pe.render(e));
-            process.exit(1);
+        for (let i = 0, elementCss; elementCss = elementCssLoginScreenIndicators[i++];) {
+          try {
+            await driver.findElement(By.css(elementCss));
+            notLoggedIn = true;
+            break;
+          } catch (e) {
+            if (e.name === 'NoSuchElementError') {
+              notLoggedIn = false;
+            } else {
+              console.error(pe.render(e));
+              process.exit(1);
+            }
           }
         }
 

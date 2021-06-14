@@ -110,6 +110,12 @@ submission.
 
 > NOTE!!: After upgrading to minor or major versions always run `wfconfigure`
 
+#### 1.7.0
+
+- Add new inchcape ui jira handler.
+- Fix and imporve bitbucket PR handler.
+- Update chrome driver 91^.
+
 #### 1.6.4
 
 - Update chrome driver for chrome 87.x.

@@ -110,7 +110,7 @@ module.exports = class SummitJira {
             });
         }
       });
-    await this.driver.sleep(500);
+    await this.driver.wait(until.elementIsNotVisible(form), 1500);
   }
 
   getPathCloneLogsFrom(startDate, endDate) {
@@ -124,6 +124,7 @@ module.exports = class SummitJira {
 
     await this.driver.wait(until.elementLocated(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR)), 10000);
 
+    await this.driver.executeScript("document.body.style.zoom='90%';");
     const elements = await this.driver.findElements(By.css(process.env.JIRA_CLONE_TASK_ROW_SELECTOR));
     console.log(`Found ${elements.length} logs.`);
     let promise = Promise.resolve();

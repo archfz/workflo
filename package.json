@@ -1,17 +1,18 @@
 {
   "name": "fzuzzy-workflo",
-  "version": "1.6.4",
+  "version": "1.7.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "pack-and-install": "npm pack && npm i -g fzuzzy-workflo-*.tgz"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "args": "^5.0.1",
-    "axios": "^0.19.1",
-    "chromedriver": "^87.0.0",
+    "axios": "^0.21.1",
+    "chromedriver": "^91.0.0",
     "dateformat": "^3.0.3",
     "dotenv": "^8.1.0",
     "inquirer": "^7.0.3",

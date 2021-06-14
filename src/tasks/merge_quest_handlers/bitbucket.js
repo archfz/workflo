@@ -14,18 +14,17 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
   console.log(`Visiting: ${url}`);
   await getBrowser(url, async (driver) => {
     await driver.wait(until.elementLocated(By.id(process.env.BITBUCKET_MR_FORM_ID)), 10000);
-    await driver.sleep(1000);
 
     await driver.wait(until.elementLocated(By.css(`${process.env.BITBUCKET_MR_CLOSE_BRANCH_SELECTOR}:not(:disabled)`)), 20000);
     await driver.findElement(By.css(`${process.env.BITBUCKET_MR_CLOSE_BRANCH_SELECTOR}`))
       .then((element) => {
         element.getAttribute('checked')
           .then((attr) => {
-            !attr && element.click()
+            console.log(`Pr is set to be closed after merge: ` + attr);
+            !attr && driver.findElement(By.css('[for="id_close_anchor_branch"]')).click()
           })
       });
 
-    await driver.sleep(500);
     await driver.wait(until.elementLocated(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`)), 20000);
     const submit = await driver.findElement(By.css(`#${process.env.BITBUCKET_MR_FORM_ID} [type='submit']:not(:disabled)`));
     await submit.click();
@@ -40,15 +39,17 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
     const likesElement = await driver.findElements(By.css(process.env.BITBUCKET_MR_LIKES_SELECTOR));
     likes = likesElement.length - 1;
 
+    await driver.findElement(By.css('[data-testid="sidebar-tab-files"]')).click();
+
     let failedWaits = 0;
     try {
-      await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 10000);
+      await driver.wait(until.elementLocated(By.xpath(process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR)), 500);
     } catch (e) {
       console.error(e);
       failedWaits++;
     }
     try {
-      await driver.wait(until.elementLocated(By.css(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 10000);
+      await driver.wait(until.elementLocated(By.xpath(process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR)), 500);
     } catch (e) {
       console.error(e);
       failedWaits++;
@@ -58,8 +59,18 @@ async function createMergeRequest(project, currentBranch, targetBranch) {
       throw new Error(`Could not find any additions or removals information.`);
     }
 
-    additions = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
-    removes = await driver.executeScript(`return Array.from(document.querySelectorAll('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR.replace(/'/g, '\\\'')}')).reduce((total, item) =>  (Number.parseInt(item.innerHTML.substr(1), 10) || 0) + total, 0)`);
+    additions = await driver.executeScript(`
+      let res = document.evaluate('${process.env.BITBUCKET_CHANGES_ADDITIONS_SELECTOR.replace(/'/g, '\\\'')}', document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+      let arr = Array(res.snapshotLength).fill(0).map((element, index) =>  res.snapshotItem(index));
+      return arr.reduce((total, item) => 
+         Number.parseInt(item.innerHTML.split(' ')[0]) + total, 0);
+    `);
+    removes = await driver.executeScript(`
+      let res = document.evaluate('${process.env.BITBUCKET_CHANGES_REMOVES_SELECTOR.replace(/'/g, '\\\'')}', document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+      let arr = Array(res.snapshotLength).fill(0).map((element, index) =>  res.snapshotItem(index));
+      return arr.reduce((total, item) => 
+         Number.parseInt(item.innerHTML.split(' ')[0]) + total, 0);
+    `);
   });
 
   return {
